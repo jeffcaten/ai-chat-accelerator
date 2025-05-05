@@ -1,5 +1,6 @@
 Flask
 boto3
+botocore
 markdown
 psycopg[binary]
 gunicorn
