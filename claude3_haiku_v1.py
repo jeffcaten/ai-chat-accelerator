@@ -3,7 +3,7 @@ import log
 import boto3
 
 proxies = {"https": "http://10.0.10.238:8088"}
-bedrock_config = Config(region_name='us-east-1', signature_version='v4' proxies=proxies)
+bedrock_config = Config(region_name='us-east-1', signature_version='v4', proxies=proxies)
 
 model_id = "anthropic.claude-3-haiku-20240307-v1:0"
 bedrock = boto3.client("bedrock-runtime", verify=False, config=bedrock_config)
