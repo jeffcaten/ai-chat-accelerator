@@ -49,7 +49,7 @@ docker run --rm \
  
 
 # register new task definition
-REGISTRATION=$(aws ecs register-task-definition --cli-input-json file://"tmp/NEW_TASK_DEF_INJECTED.json")
+REGISTRATION=$(aws ecs register-task-definition --cli-input-json file://"/tmp/NEW_TASK_DEF_INJECTED.json")
 REV=$(echo ${REGISTRATION} | jq '.taskDefinition.revision')
 echo ""
 echo "registered revision: ${REV}"
