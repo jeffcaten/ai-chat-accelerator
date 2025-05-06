@@ -36,6 +36,9 @@ NEW_TASK_DEF=$(echo $TASK_DEF | jq --arg IMAGE "$IMAGE" '.taskDefinition |
 	del(.registeredAt) | del(.registeredBy)
 ')
 
+cat $NEW_TASK_DEF > /tmp/NEW_TASK_DEF.json
+
+
 PATCHER_IMAGE="trendmicrocloudone/ecs-taskdef-patcher:2.6.5"
 
 #run the Docker container to patch the task definition
@@ -43,11 +46,11 @@ docker run --rm \
 	-v "$(pwd)/task_definitions":/mnt/input \
 	-v "$(pwd)/container_definitions":/mnt/output \
 	$PATCHER_IMAGE \
-	-i "/mnt/input/$NEW_TASK_DEF" \
-	-o "/mnt/output/$NEW_TASK_DEF_TM_INJECTED"
+	-i "/tmp/NEW_TASK_DEF.json" \
+	-o "/tmp/NEW_TASK_DEF_INJECTED.json"
 
 # register new task definition
-REGISTRATION=$(aws ecs register-task-definition --cli-input-json "${NEW_TASK_DEF_TM_INJECTED}")
+REGISTRATION=$(aws ecs register-task-definition --cli-input-json "/tmp/NEW_TASK_DEF_INJECTED.json")
 REV=$(echo ${REGISTRATION} | jq '.taskDefinition.revision')
 echo ""
 echo "registered revision: ${REV}"
