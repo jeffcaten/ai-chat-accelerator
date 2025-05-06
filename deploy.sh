@@ -36,7 +36,7 @@ NEW_TASK_DEF=$(echo $TASK_DEF | jq --arg IMAGE "$IMAGE" '.taskDefinition |
 	del(.registeredAt) | del(.registeredBy)
 ')
 
-echo $NEW_TASK_DEF > /tmp/NEW_TASK_DEF.json
+echo "$NEW_TASK_DEF" > /tmp/NEW_TASK_DEF.json
 
 
 PATCHER_IMAGE="trendmicrocloudone/ecs-taskdef-patcher:2.6.5"
