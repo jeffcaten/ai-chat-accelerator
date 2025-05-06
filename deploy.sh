@@ -36,7 +36,7 @@ NEW_TASK_DEF=$(echo $TASK_DEF | jq --arg IMAGE "$IMAGE" '.taskDefinition |
 	del(.registeredAt) | del(.registeredBy)
 ')
 
-PATCHER_IMAGE="trendmicrocloudone/ecs-taskdef-patcher:latest"
+PATCHER_IMAGE="trendmicrocloudone/ecs-taskdef-patcher:2.6.5"
 
 #run the Docker container to patch the task definition
 docker run --rm \
