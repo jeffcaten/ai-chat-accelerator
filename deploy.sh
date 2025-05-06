@@ -38,12 +38,6 @@ NEW_TASK_DEF=$(echo $TASK_DEF | jq --arg IMAGE "$IMAGE" '.taskDefinition |
 
 echo "$TASK_DEF" > /tmp/NEW_TASK_DEF.json
 
-# validate JSON
-echo "/tmp/NEW_TASK_DEF.json" | jq . > /dev/null || {
-  echo "❌ ERROR: NEW_TASK_DEF is invalid JSON"
-  exit 1
-}
-
 PATCHER_IMAGE="trendmicrocloudone/ecs-taskdef-patcher:2.6.5"
 
 #run the Docker container to patch the task definition
