@@ -36,18 +36,24 @@ NEW_TASK_DEF=$(echo $TASK_DEF | jq --arg IMAGE "$IMAGE" '.taskDefinition |
 	del(.registeredAt) | del(.registeredBy)
 ')
 
-echo "$NEW_TASK_DEF" > /tmp/NEW_TASK_DEF.json
+echo "$TASK_DEF" > /tmp/NEW_TASK_DEF.json
 
+# validate JSON
+echo "/tmp/NEW_TASK_DEF.json" | jq . > /dev/null || {
+  echo "❌ ERROR: NEW_TASK_DEF is invalid JSON"
+  exit 1
+}
 
 PATCHER_IMAGE="trendmicrocloudone/ecs-taskdef-patcher:2.6.5"
 
 #run the Docker container to patch the task definition
 docker run --rm \
-	-v "$(pwd)/task_definitions":/mnt/input \
-	-v "$(pwd)/container_definitions":/mnt/output \
+	-v /tmp:/mnt \
 	$PATCHER_IMAGE \
-	-i "/tmp/NEW_TASK_DEF.json" \
-	-o "/tmp/NEW_TASK_DEF_INJECTED.json"
+	-i "/mnt/NEW_TASK_DEF.json" \
+	-o "/mnt/NEW_TASK_DEF_INJECTED.json"
+ 
+
 
 # register new task definition
 REGISTRATION=$(aws ecs register-task-definition --cli-input-json "/tmp/NEW_TASK_DEF_INJECTED.json")
