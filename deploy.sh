@@ -57,7 +57,7 @@ echo "registered revision: ${REV}"
 
 # tell service to use it
 aws ecs update-service --cluster ${CLUSTER} --service ${SERVICE} \
-	--task-definition ${TASK_FAMILY}:${REV}
+	--task-definition ${TASK_FAMILY}:${REV} --enable-execute-command
 echo ""
 echo "service updated to use the new task definition with image: ${IMAGE}"
 
