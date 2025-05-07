@@ -112,6 +112,23 @@ Resources:
                       'body': json.dumps(f'Error executing command: {str(e)}')
                   }
 
+  EventBridgeRule:
+    Type: AWS::Events::Rule
+    Properties:
+      ScheduleExpression: rate(6 hours)
+      Targets:
+        - Arn: !GetAtt ExecuteCommandLambda.Arn
+          Id: "ExecuteCommandLambdaTarget"
+
+  LambdaInvokePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref ExecuteCommandLambda
+      Principal: events.amazonaws.com
+      SourceArn: !GetAtt EventBridgeRule.Arn
+
+
 Outputs:
   LambdaFunctionArn:
     Description: "ARN of the Lambda function"
