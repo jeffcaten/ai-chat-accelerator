@@ -50,13 +50,14 @@ Resources:
     Properties:
       FunctionName: ExecuteCommandLambda
       Handler: index.lambda_handler
+      Timeout: 10
       Role: !GetAtt LambdaExecutionRole.Arn
       Runtime: python3.13
       Environment:
         Variables:
           CLUSTER_NAME: !Ref ClusterName
           CONTAINER_NAME: !Ref ContainerName
-          COMMAND: your-command
+          COMMAND: "touch /etc/apt/testfile"
       Code:
         ZipFile: |
           import boto3
