@@ -48,7 +48,6 @@ Resources:
   ExecuteCommandLambda:
     Type: AWS::Lambda::Function
     Properties:
-      FunctionName: ExecuteCommandLambda
       Handler: index.lambda_handler
       Timeout: 10
       Role: !GetAtt LambdaExecutionRole.Arn
