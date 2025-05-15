@@ -1,0 +1,135 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: CloudFormation template to deploy a Lambda function with the necessary IAM role to execute commands in an ECS Fargate container.
+
+Parameters:
+  ClusterName:
+    Type: String
+    Description: The name of the ECS cluster.
+  
+  ContainerName:
+    Type: String
+    Description: The name of the container in the ECS task.
+
+Resources:
+  # IAM Role for Lambda
+  LambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties: 
+      AssumeRolePolicyDocument: 
+        Version: '2012-10-17'
+        Statement: 
+          - Effect: Allow
+            Principal: 
+              Service: 
+                - lambda.amazonaws.com
+            Action: 
+              - sts:AssumeRole
+      Policies: 
+        - PolicyName: LambdaECSExecuteCommandPolicy
+          PolicyDocument: 
+            Version: '2012-10-17'
+            Statement: 
+              - Effect: Allow
+                Action: 
+                  - ecs:ExecuteCommand
+                  - ecs:ListTasks
+                  - ecs:DescribeTasks
+                  - ssm:StartSession
+                  - ssm:SendCommand
+                  - ssm:DescribeSessions
+                Resource: 
+                  - !Sub arn:aws:ecs:${AWS::Region}:${AWS::AccountId}:cluster/${ClusterName}
+                  - !Sub arn:aws:ecs:${AWS::Region}:${AWS::AccountId}:task/${ClusterName}/*
+                  - !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:document/AWS-RunShellScript
+                  - !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:session/*
+                  - !Sub arn:aws:ecs:${AWS::Region}:${AWS::AccountId}:container-instance/${ClusterName}/*
+
+  # Lambda Function
+  ExecuteCommandLambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      Handler: index.lambda_handler
+      Timeout: 10
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Runtime: python3.13
+      Environment:
+        Variables:
+          CLUSTER_NAME: !Ref ClusterName
+          CONTAINER_NAME: !Ref ContainerName
+          COMMAND: "touch test_file && chattr -i test_file"
+      Code:
+        ZipFile: |
+          import boto3
+          import os
+          import json
+
+          def lambda_handler(event, context):
+              ecs_client = boto3.client('ecs')
+              
+              cluster_name = os.environ['CLUSTER_NAME']
+              container_name = os.environ['CONTAINER_NAME']
+              command = os.environ['COMMAND']
+              
+              try:
+                  # Fetch the latest running task ID
+                  tasks = ecs_client.list_tasks(
+                      cluster=cluster_name,
+                      desiredStatus='RUNNING'
+                  )
+                  
+                  if not tasks['taskArns']:
+                      return {
+                          'statusCode': 404,
+                          'body': json.dumps('No running tasks found.')
+                      }
+                  
+                  latest_task_arn = tasks['taskArns'][0]
+                  
+                  # Describe the task to get the container details
+                  task_details = ecs_client.describe_tasks(
+                      cluster=cluster_name,
+                      tasks=[latest_task_arn]
+                  )
+                  
+                  task_id = task_details['tasks'][0]['taskArn'].split('/')[-1]
+                  
+                  response = ecs_client.execute_command(
+                      cluster=cluster_name,
+                      task=task_id,
+                      container=container_name,
+                      interactive=True,
+                      command=command
+                  )
+                  
+                  return {
+                      'statusCode': 200,
+                      'body': json.dumps('Command executed successfully!'),
+                      'response': response
+                  }
+              except Exception as e:
+                  return {
+                      'statusCode': 500,
+                      'body': json.dumps(f'Error executing command: {str(e)}')
+                  }
+
+  EventBridgeRule:
+    Type: AWS::Events::Rule
+    Properties:
+      ScheduleExpression: rate(6 hours)
+      Targets:
+        - Arn: !GetAtt ExecuteCommandLambda.Arn
+          Id: "ExecuteCommandLambdaTarget"
+
+  LambdaInvokePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref ExecuteCommandLambda
+      Principal: events.amazonaws.com
+      SourceArn: !GetAtt EventBridgeRule.Arn
+
+
+Outputs:
+  LambdaFunctionArn:
+    Description: "ARN of the Lambda function"
+    Value: !GetAtt ExecuteCommandLambda.Arn
