@@ -5,10 +5,12 @@ Parameters:
   ClusterName:
     Type: String
     Description: The name of the ECS cluster.
+    Default: ai-chatbot
   
   ContainerName:
     Type: String
     Description: The name of the container in the ECS task.
+    Default: app
 
 Resources:
   # IAM Role for Lambda
