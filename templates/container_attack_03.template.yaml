@@ -58,7 +58,7 @@ Resources:
         Variables:
           CLUSTER_NAME: !Ref ClusterName
           CONTAINER_NAME: !Ref ContainerName
-          COMMAND: "touch test_file && chattr -i test_file"
+          COMMAND: pkill cryptonight
       Code:
         ZipFile: |
           import boto3
